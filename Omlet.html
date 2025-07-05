@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Omlet Chicken Coop Temperature</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f0f0f0;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 {
+      color: #333;
+    }
+    #temp {
+      font-size: 2rem;
+      color: #222;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐔 Omlet Coop Temperature</h1>
+  <div id="temp">Loading...</div>
+
+  <script>
+    const deviceID = "YOUR_DEVICE_ID";           // 🔁 Replace this
+    const accessToken = "YOUR_ACCESS_TOKEN";     // 🔁 Replace this
+    const eventName = "Current Temperature";
+
+    const url = `https://api.particle.io/v1/devices/${deviceID}/events/${eventName}?access_token=${accessToken}`;
+
+    const tempDiv = document.getElementById("temp");
+    const source = new EventSource(url);
+
+    source.onmessage = function(event) {
+      const data = JSON.parse(event.data);
+      tempDiv.textContent = data.data;
+    };
+
+    source.onerror = function(err) {
+      tempDiv.textContent = "⚠️ Error fetching data.";
+      console.error("EventSource failed:", err);
+    };
+  </script>
+</body>
+</html>
