@@ -1,35 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Omlet Chicken Coop Temperature</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Omlet Chicken Coop Temp</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      font-family: sans-serif;
-      background: #f0f0f0;
-      text-align: center;
-      padding: 40px;
-    }
-    h1 {
-      color: #333;
-    }
-    #temp {
-      font-size: 2rem;
-      color: #222;
-      margin-top: 20px;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 2rem; }
+    #temp { font-size: 2rem; margin-top: 1rem; }
   </style>
 </head>
 <body>
-  <h1>🐔 Omlet Coop Temperature</h1>
-  <div id="temp">Loading...</div>
+  <h1>🐔 Omlet Chicken Coop Temperature</h1>
+  <div id="temp">Loading temperature...</div>
 
   <script>
-    const deviceID = "YOUR_DEVICE_ID";           // 🔁 Replace this
-    const accessToken = "YOUR_ACCESS_TOKEN";     // 🔁 Replace this
+    const deviceID = "350040000d51353532343635";
+    const accessToken = "8f1829faaaf148b4f81324404c03345c0546f062";
     const eventName = "Current Temperature";
 
-    const url = `https://api.particle.io/v1/devices/${deviceID}/events/${eventName}?access_token=${accessToken}`;
+    const url = `https://api.particle.io/v1/devices/${deviceID}/events/${encodeURIComponent(eventName)}?access_token=${accessToken}`;
 
     const tempDiv = document.getElementById("temp");
     const source = new EventSource(url);
@@ -40,7 +28,7 @@
     };
 
     source.onerror = function(err) {
-      tempDiv.textContent = "⚠️ Error fetching data.";
+      tempDiv.textContent = "Error fetching temperature data.";
       console.error("EventSource failed:", err);
     };
   </script>
