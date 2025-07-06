@@ -1,126 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Omlet Chicken Coop Temp</title>
+  <title>Omlet Chicken Coop Temperature</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
       padding: 2rem;
-      background-color: #f7f7f7;
+      background: #f8f8f8;
     }
     #temp {
       font-size: 2rem;
       margin-top: 1rem;
-      color: #333;
     }
-    .status {
+    #timestamp {
       font-size: 0.9rem;
-      color: #888;
-      margin-top: 1rem;
-    }
-    canvas {
-      max-width: 600px;
-      margin: 2rem auto;
+      color: #555;
+      margin-top: 0.5rem;
     }
   </style>
 </head>
 <body>
   <h1>🐔 Omlet Chicken Coop Temperature</h1>
   <div id="temp">Loading temperature...</div>
-  <div class="status" id="status">Connecting to Particle API...</div>
-
-  <canvas id="tempChart"></canvas>
+  <div id="timestamp"></div>
 
   <script>
-    const deviceID = "350040000d51353532343635";
-    const accessToken = "222f6d52a942cb09d1627e985e23694d1521832e";
-    const eventName = "Current Temperature";
+    // 🔁 REPLACE this with your actual published Google Sheet CSV URL:
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/1lgIDerjSPt4aueW9Vj5qHqmiolbNlvZJDfMJfSqdp94/pub?gid=0&single=true&output=csv";
 
-    const tempDiv = document.getElementById("temp");
-    const statusDiv = document.getElementById("status");
+    fetch(sheetUrl)
+      .then(response => response.text())
+      .then(csvText => {
+        const rows = csvText.trim().split("\n").slice(1); // skip header row
+        const latest = rows[rows.length - 1].split(",");
 
-    // Initialize Chart
-    const ctx = document.getElementById('tempChart').getContext('2d');
-    const tempChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'Temperature (°F)',
-          data: [],
-          borderColor: 'orange',
-          backgroundColor: 'rgba(255,165,0,0.2)',
-          tension: 0.3
-        }]
-      },
-      options: {
-        scales: {
-          x: { title: { display: true, text: 'Time' } },
-          y: { title: { display: true, text: '°F' }, min: 20, max: 120 }
-        }
-      }
-    });
+        const timestamp = latest[0];
+        const tempC = latest[1];
+        const tempF = latest[2];
 
-    async function fetchLastEvent() {
-      const url = `https://api.particle.io/v1/devices/${deviceID}/events/${encodeURIComponent(eventName)}?access_token=${accessToken}`;
-
-      try {
-        statusDiv.textContent = "Waiting for next event...";
-        const response = await fetch(url);
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let result = "";
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          result += decoder.decode(value, { stream: true });
-
-          const lines = result.split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data:")) {
-              const json = JSON.parse(line.slice(5).trim());
-              console.log("Data:", json);
-              updateTemperature(json.data);
-              return;
-            }
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching event:", err);
-        statusDiv.textContent = "Error connecting.";
-        tempDiv.textContent = "Error fetching temperature.";
-      }
-    }
-
-    function updateTemperature(dataString) {
-      tempDiv.textContent = dataString;
-      statusDiv.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
-
-      const tempF = parseFloat(dataString.split("F:")[1]);
-      const timestamp = new Date().toLocaleTimeString();
-
-      // Add new data
-      tempChart.data.labels.push(timestamp);
-      tempChart.data.datasets[0].data.push(tempF);
-
-      // Limit to last 20 readings
-      if (tempChart.data.labels.length > 20) {
-        tempChart.data.labels.shift();
-        tempChart.data.datasets[0].data.shift();
-      }
-
-      tempChart.update();
-    }
-
-    fetchLastEvent();
-    setInterval(fetchLastEvent, 30000);
+        document.getElementById("temp").textContent = `🌡️ ${tempF} °F / ${tempC} °C`;
+        document.getElementById("timestamp").textContent = `⏱️ Last updated: ${timestamp}`;
+      })
+      .catch(err => {
+        console.error("Error loading sheet:", err);
+        document.getElementById("temp").textContent = "Failed to load temperature data.";
+      });
   </script>
 </body>
 </html>
