@@ -2,7 +2,8 @@
 <html>
 <head>
   <title>Omlet Chicken Coop Temperature</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -19,33 +20,83 @@
       color: #555;
       margin-top: 0.5rem;
     }
+    canvas {
+      max-width: 100%;
+      margin-top: 2rem;
+    }
   </style>
 </head>
 <body>
   <h1>🐔 Omlet Chicken Coop Temperature</h1>
   <div id="temp">Loading temperature...</div>
   <div id="timestamp"></div>
+  <canvas id="tempChart" width="400" height="200"></canvas>
 
   <script>
-    // 🔁 REPLACE this with your actual published Google Sheet CSV URL:
+    // Replace this URL with your own published Google Sheet CSV link
     const sheetUrl = "https://docs.google.com/spreadsheets/d/e/1lgIDerjSPt4aueW9Vj5qHqmiolbNlvZJDfMJfSqdp94/pub?gid=0&single=true&output=csv";
+
+    const tempDiv = document.getElementById("temp");
+    const timestampDiv = document.getElementById("timestamp");
+    const ctx = document.getElementById("tempChart").getContext("2d");
+
+    let chart;
 
     fetch(sheetUrl)
       .then(response => response.text())
-      .then(csvText => {
-        const rows = csvText.trim().split("\n").slice(1); // skip header row
-        const latest = rows[rows.length - 1].split(",");
+      .then(csv => {
+        const lines = csv.trim().split("\n").slice(1); // Skip header
+        const labels = [];
+        const tempCData = [];
+        const tempFData = [];
 
-        const timestamp = latest[0];
-        const tempC = latest[1];
-        const tempF = latest[2];
+        lines.forEach(row => {
+          const [timestamp, tempC, tempF] = row.split(",");
+          labels.push(timestamp);
+          tempCData.push(parseFloat(tempC));
+          tempFData.push(parseFloat(tempF));
+        });
 
-        document.getElementById("temp").textContent = `🌡️ ${tempF} °F / ${tempC} °C`;
-        document.getElementById("timestamp").textContent = `⏱️ Last updated: ${timestamp}`;
+        const latestTempF = tempFData[tempFData.length - 1];
+        const latestTempC = tempCData[tempCData.length - 1];
+        const latestTimestamp = labels[labels.length - 1];
+
+        tempDiv.textContent = `🌡️ ${latestTempF} °F / ${latestTempC} °C`;
+        timestampDiv.textContent = `⏱️ Last updated: ${latestTimestamp}`;
+
+        chart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Temperature (°F)",
+                data: tempFData,
+                borderColor: "#f44336",
+                backgroundColor: "rgba(244, 67, 54, 0.2)",
+                fill: true,
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'top' },
+              title: {
+                display: true,
+                text: 'Omlet Coop Temperature Over Time'
+              }
+            },
+            scales: {
+              x: { title: { display: true, text: 'Time' } },
+              y: { title: { display: true, text: '°F' } }
+            }
+          }
+        });
       })
-      .catch(err => {
-        console.error("Error loading sheet:", err);
-        document.getElementById("temp").textContent = "Failed to load temperature data.";
+      .catch(error => {
+        console.error("Error loading temperature data:", error);
+        tempDiv.textContent = "Error loading data.";
       });
   </script>
 </body>
