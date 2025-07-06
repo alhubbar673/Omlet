@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Omlet Chicken Coop Temperature + Camera</title>
+  <title>Omlet Chicken Coop Temperature</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://unpkg.com/mjpeg-player/dist/mjpeg-player.min.js"></script>
   <style>
     body {
       font-family: sans-serif;
@@ -25,25 +24,15 @@
       max-width: 100%;
       margin-top: 2rem;
     }
-    #cameraFeed {
-      margin-top: 2rem;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      border: 2px solid #ccc;
-    }
   </style>
 </head>
 <body>
-  <h1>🐔 Omlet Chicken Coop Temperature + Camera</h1>
+  <h1>🐔 Omlet Chicken Coop Temperature</h1>
   <div id="temp">Loading temperature...</div>
   <div id="timestamp"></div>
   <canvas id="tempChart" width="400" height="200"></canvas>
 
-  <div id="cameraFeed">Loading camera feed...</div>
-
   <script>
-    // Temperature chart code
     const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTtfizZ2s_F-HS8GyzN_1gJmRWWiRZNwooBYbVUlIqH3nErMd0D-IAlOGgAfrQOd3SwwWKrqhx_Q9u/pub?output=csv";
     const tempDiv = document.getElementById("temp");
     const timestampDiv = document.getElementById("timestamp");
@@ -113,30 +102,4 @@
         options: {
           responsive: true,
           plugins: {
-            legend: { position: "top" },
-            title: {
-              display: true,
-              text: "Omlet Coop Temperature Over Time"
-            }
-          },
-          scales: {
-            x: { title: { display: true, text: "Time" } },
-            y: { title: { display: true, text: "°F" } }
-          }
-        }
-      });
-    }
-
-    drawChart();
-    setInterval(drawChart, 300000); // refresh every 5 minutes
-
-    // Camera feed initialization
-    const cameraFeedContainer = document.getElementById("cameraFeed");
-    new MjpegPlayer(cameraFeedContainer, {
-      url: "http://admin:PintoLimaBean773!!!@192.168.1.102:37777/cgi-bin/mjpg/video.cgi?channel=1&subtype=1", // <-- Replace with your camera URL
-      width: 600,
-      height: 400,
-    });
-  </script>
-</body>
-</html>
+            legend:
