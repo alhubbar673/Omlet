@@ -39,71 +39,80 @@
     const timestampDiv = document.getElementById("timestamp");
     const ctx = document.getElementById("tempChart").getContext("2d");
 
-    let chart;
+    fetch(sheetUrl)
+      .then(response => response.text())
+      .then(csv => {
+        const lines = csv.trim().split("\n");
+        if (lines.length <= 1) {
+          throw new Error("No data rows found.");
+        }
 
-    function fetchDataAndUpdate() {
-      fetch(sheetUrl)
-        .then(response => response.text())
-        .then(csv => {
-          const lines = csv.trim().split("\n").slice(1); // Skip header
-          const labels = [];
-          const tempCData = [];
-          const tempFData = [];
+        const labels = [];
+        const tempCData = [];
+        const tempFData = [];
 
-          lines.forEach(row => {
-            const [timestamp, tempC, tempF] = row.split(",");
-            labels.push(timestamp);
-            tempCData.push(parseFloat(tempC));
-            tempFData.push(parseFloat(tempF));
-          });
+        lines.slice(1).forEach((row, index) => {
+          const parts = row.split(",");
+          if (parts.length >= 3) {
+            const timestamp = parts[0].trim();
+            const tempC = parseFloat(parts[1]);
+            const tempF = parseFloat(parts[2]);
 
-          const latestTempF = tempFData[tempFData.length - 1];
-          const latestTempC = tempCData[tempCData.length - 1];
-          const latestTimestamp = labels[labels.length - 1];
-
-          tempDiv.textContent = `🌡️ ${latestTempF} °F / ${latestTempC} °C`;
-          timestampDiv.textContent = `⏱️ Last updated: ${latestTimestamp}`;
-
-          if (!chart) {
-            chart = new Chart(ctx, {
-              type: 'line',
-              data: {
-                labels: labels,
-                datasets: [{
-                  label: "Temperature (°F)",
-                  data: tempFData,
-                  borderColor: "#f44336",
-                  backgroundColor: "rgba(244, 67, 54, 0.2)",
-                  fill: true
-                }]
-              },
-              options: {
-                responsive: true,
-                animation: false,
-                plugins: {
-                  legend: { position: 'top' },
-                  title: { display: true, text: 'Omlet Coop Temperature Over Time' }
-                },
-                scales: {
-                  x: { title: { display: true, text: 'Time' } },
-                  y: { title: { display: true, text: '°F' } }
-                }
-              }
-            });
+            if (!isNaN(tempC) && !isNaN(tempF)) {
+              labels.push(timestamp);
+              tempCData.push(tempC);
+              tempFData.push(tempF);
+            } else {
+              console.warn(`Row ${index + 2} has invalid number data:`, row);
+            }
           } else {
-            chart.data.labels = labels;
-            chart.data.datasets[0].data = tempFData;
-            chart.update();
+            console.warn(`Row ${index + 2} skipped due to missing columns:`, row);
           }
-        })
-        .catch(error => {
-          console.error("Error loading temperature data:", error);
-          tempDiv.textContent = "Error loading data.";
         });
-    }
 
-    fetchDataAndUpdate(); // Initial load
-    setInterval(fetchDataAndUpdate, 30000); // Refresh every 30 seconds
+        if (labels.length === 0 || tempFData.length === 0) {
+          throw new Error("No valid temperature data found.");
+        }
+
+        const latestTempF = tempFData[tempFData.length - 1];
+        const latestTempC = tempCData[tempCData.length - 1];
+        const latestTimestamp = labels[labels.length - 1];
+
+        tempDiv.textContent = `🌡️ ${latestTempF} °F / ${latestTempC} °C`;
+        timestampDiv.textContent = `⏱️ Last updated: ${latestTimestamp}`;
+
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: "Temperature (°F)",
+              data: tempFData,
+              borderColor: "#f44336",
+              backgroundColor: "rgba(244, 67, 54, 0.2)",
+              fill: true,
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: 'top' },
+              title: {
+                display: true,
+                text: 'Omlet Coop Temperature Over Time'
+              }
+            },
+            scales: {
+              x: { title: { display: true, text: 'Time' } },
+              y: { title: { display: true, text: '°F' } }
+            }
+          }
+        });
+      })
+      .catch(error => {
+        console.error("Error loading temperature data:", error);
+        tempDiv.textContent = "⚠️ Error loading data.";
+      });
   </script>
 </body>
 </html>
