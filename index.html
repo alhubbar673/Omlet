@@ -5,25 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 2rem;
-      background: #f8f8f8;
-    }
-    #temp {
-      font-size: 2rem;
-      margin-top: 1rem;
-    }
-    #timestamp {
-      font-size: 0.9rem;
-      color: #555;
-      margin-top: 0.5rem;
-    }
-    canvas {
-      max-width: 100%;
-      margin-top: 2rem;
-    }
+    body { font-family: sans-serif; text-align: center; padding: 2rem; background: #f8f8f8; }
+    #temp { font-size: 2rem; margin-top: 1rem; }
+    #timestamp { font-size: 0.9rem; color: #555; margin-top: 0.5rem; }
+    canvas { max-width: 100%; margin-top: 2rem; }
   </style>
 </head>
 <body>
@@ -34,85 +19,95 @@
 
   <script>
     const sheetUrl = "https://docs.google.com/spreadsheets/d/e/1lgIDerjSPt4aueW9Vj5qHqmiolbNlvZJDfMJfSqdp94/pub?gid=0&single=true&output=csv";
-
     const tempDiv = document.getElementById("temp");
     const timestampDiv = document.getElementById("timestamp");
     const ctx = document.getElementById("tempChart").getContext("2d");
 
-    fetch(sheetUrl)
-      .then(response => response.text())
-      .then(csv => {
-        const lines = csv.trim().split("\n");
-        if (lines.length <= 1) {
-          throw new Error("No data rows found.");
-        }
+    async function fetchData() {
+      try {
+        const response = await fetch(sheetUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+        const csvText = await response.text();
+        const lines = csvText.trim().split("\n");
+        if (lines.length <= 1) throw new Error("No data found.");
 
         const labels = [];
         const tempCData = [];
         const tempFData = [];
 
-        lines.slice(1).forEach((row, index) => {
-          const parts = row.split(",");
-          if (parts.length >= 3) {
-            const timestamp = parts[0].trim();
-            const tempC = parseFloat(parts[1]);
-            const tempF = parseFloat(parts[2]);
+        // Parse only last 50 rows to reduce load:
+        const start = Math.max(1, lines.length - 50);
+
+        for (let i = start; i < lines.length; i++) {
+          const row = lines[i].split(",");
+          if (row.length >= 3) {
+            const timestamp = row[0].trim();
+            const tempC = parseFloat(row[1]);
+            const tempF = parseFloat(row[2]);
 
             if (!isNaN(tempC) && !isNaN(tempF)) {
               labels.push(timestamp);
               tempCData.push(tempC);
               tempFData.push(tempF);
-            } else {
-              console.warn(`Row ${index + 2} has invalid number data:`, row);
             }
-          } else {
-            console.warn(`Row ${index + 2} skipped due to missing columns:`, row);
           }
-        });
-
-        if (labels.length === 0 || tempFData.length === 0) {
-          throw new Error("No valid temperature data found.");
         }
 
-        const latestTempF = tempFData[tempFData.length - 1];
-        const latestTempC = tempCData[tempCData.length - 1];
-        const latestTimestamp = labels[labels.length - 1];
+        if (labels.length === 0) throw new Error("No valid temperature data.");
 
-        tempDiv.textContent = `🌡️ ${latestTempF} °F / ${latestTempC} °C`;
-        timestampDiv.textContent = `⏱️ Last updated: ${latestTimestamp}`;
+        tempDiv.textContent = `🌡️ ${tempFData[tempFData.length - 1]} °F / ${tempCData[tempCData.length - 1]} °C`;
+        timestampDiv.textContent = `⏱️ Last updated: ${labels[labels.length - 1]}`;
 
-        new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: "Temperature (°F)",
-              data: tempFData,
-              borderColor: "#f44336",
-              backgroundColor: "rgba(244, 67, 54, 0.2)",
-              fill: true,
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { position: 'top' },
-              title: {
-                display: true,
-                text: 'Omlet Coop Temperature Over Time'
-              }
-            },
-            scales: {
-              x: { title: { display: true, text: 'Time' } },
-              y: { title: { display: true, text: '°F' } }
-            }
-          }
-        });
-      })
-      .catch(error => {
-        console.error("Error loading temperature data:", error);
+        return { labels, tempFData };
+
+      } catch (error) {
+        console.error("Failed to fetch or parse data:", error);
         tempDiv.textContent = "⚠️ Error loading data.";
+        return null;
+      }
+    }
+
+    async function drawChart() {
+      const data = await fetchData();
+      if (!data) return;
+
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: data.labels,
+          datasets: [{
+            label: "Temperature (°F)",
+            data: data.tempFData,
+            borderColor: "#f44336",
+            backgroundColor: "rgba(244, 67, 54, 0.2)",
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: "top" },
+            title: {
+              display: true,
+              text: "Omlet Coop Temperature Over Time"
+            }
+          },
+          scales: {
+            x: { title: { display: true, text: "Time" } },
+            y: { title: { display: true, text: "°F" } }
+          }
+        }
       });
+    }
+
+    drawChart();
+
+    // Optional: refresh every 5 minutes (300000 ms)
+    setInterval(() => {
+      drawChart();
+    }, 300000);
   </script>
 </body>
 </html>
