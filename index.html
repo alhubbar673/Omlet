@@ -3,25 +3,76 @@
 <head>
   <title>Omlet Chicken Coop Temp</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; padding: 2rem; }
-    #temp { font-size: 2rem; margin-top: 1rem; }
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 2rem;
+      background-color: #f7f7f7;
+    }
+    #temp {
+      font-size: 2rem;
+      margin-top: 1rem;
+      color: #333;
+    }
+    .status {
+      font-size: 0.9rem;
+      color: #888;
+      margin-top: 1rem;
+    }
+    canvas {
+      max-width: 600px;
+      margin: 2rem auto;
+    }
   </style>
 </head>
 <body>
   <h1>🐔 Omlet Chicken Coop Temperature</h1>
   <div id="temp">Loading temperature...</div>
+  <div class="status" id="status">Connecting to Particle API...</div>
+
+  <canvas id="tempChart"></canvas>
 
   <script>
     const deviceID = "350040000d51353532343635";
     const accessToken = "222f6d52a942cb09d1627e985e23694d1521832e";
     const eventName = "Current Temperature";
+
     const tempDiv = document.getElementById("temp");
+    const statusDiv = document.getElementById("status");
+
+    // Initialize Chart
+    const ctx = document.getElementById('tempChart').getContext('2d');
+    const tempChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Temperature (°F)',
+          data: [],
+          borderColor: 'orange',
+          backgroundColor: 'rgba(255,165,0,0.2)',
+          tension: 0.3
+        }]
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: 'Time' } },
+          y: { title: { display: true, text: '°F' }, min: 20, max: 120 }
+        }
+      }
+    });
 
     async function fetchLastEvent() {
+      const url = `https://api.particle.io/v1/devices/${deviceID}/events/${encodeURIComponent(eventName)}?access_token=${accessToken}`;
+
       try {
-        const url = `https://api.particle.io/v1/devices/${deviceID}/events/${encodeURIComponent(eventName)}?access_token=${accessToken}`;
+        statusDiv.textContent = "Waiting for next event...";
         const response = await fetch(url);
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let result = "";
@@ -30,24 +81,46 @@
           const { value, done } = await reader.read();
           if (done) break;
           result += decoder.decode(value, { stream: true });
-          const lines = result.split("\n");
 
-          for (let line of lines) {
+          const lines = result.split("\n");
+          for (const line of lines) {
             if (line.startsWith("data:")) {
-              const json = JSON.parse(line.replace("data:", "").trim());
-              tempDiv.textContent = json.data;
+              const json = JSON.parse(line.slice(5).trim());
+              console.log("Data:", json);
+              updateTemperature(json.data);
               return;
             }
           }
         }
       } catch (err) {
         console.error("Error fetching event:", err);
+        statusDiv.textContent = "Error connecting.";
         tempDiv.textContent = "Error fetching temperature.";
       }
     }
 
+    function updateTemperature(dataString) {
+      tempDiv.textContent = dataString;
+      statusDiv.textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+
+      const tempF = parseFloat(dataString.split("F:")[1]);
+      const timestamp = new Date().toLocaleTimeString();
+
+      // Add new data
+      tempChart.data.labels.push(timestamp);
+      tempChart.data.datasets[0].data.push(tempF);
+
+      // Limit to last 20 readings
+      if (tempChart.data.labels.length > 20) {
+        tempChart.data.labels.shift();
+        tempChart.data.datasets[0].data.shift();
+      }
+
+      tempChart.update();
+    }
+
     fetchLastEvent();
-    setInterval(fetchLastEvent, 30000); // every 30 seconds
+    setInterval(fetchLastEvent, 30000);
   </script>
 </body>
 </html>
