@@ -9,6 +9,18 @@
     #temp { font-size: 2rem; margin-top: 1rem; }
     #timestamp { font-size: 0.9rem; color: #555; margin-top: 0.5rem; }
     canvas { max-width: 100%; margin-top: 2rem; }
+    #cameraFeed {
+      margin-top: 3rem;
+      max-width: 600px;
+      border: 2px solid #444;
+      display: inline-block;
+      width: 100%;
+      height: auto;
+    }
+    h2 {
+      margin-top: 3rem;
+      color: #333;
+    }
   </style>
 </head>
 <body>
@@ -16,6 +28,13 @@
   <div id="temp">Loading temperature...</div>
   <div id="timestamp"></div>
   <canvas id="tempChart" width="400" height="200"></canvas>
+
+  <h2>Live Amcrest Camera Feed</h2>
+  <img
+    id="cameraFeed"
+    src="http://admin:PintoLimaBean773!!!@192.168.1.102/cgi-bin/mjpg/video.cgi?channel=1&subtype=1"
+    alt="Amcrest Camera Live Feed"
+  />
 
   <script>
     const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTtfizZ2s_F-HS8GyzN_1gJmRWWiRZNwooBYbVUlIqH3nErMd0D-IAlOGgAfrQOd3SwwWKrqhx_Q9u/pub?output=csv";
@@ -36,7 +55,6 @@
         const tempCData = [];
         const tempFData = [];
 
-        // Parse only last 50 rows to reduce load:
         const start = Math.max(1, lines.length - 50);
 
         for (let i = start; i < lines.length; i++) {
@@ -104,7 +122,6 @@
 
     drawChart();
 
-    // Optional: refresh every 5 minutes (300000 ms)
     setInterval(() => {
       drawChart();
     }, 300000);
