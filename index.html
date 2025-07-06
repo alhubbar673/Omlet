@@ -17,20 +17,23 @@
     const accessToken = "222f6d52a942cb09d1627e985e23694d1521832e";
     const eventName = "Current Temperature";
 
-    const url = `https://api.particle.io/v1/devices/${deviceID}/events/${encodeURIComponent(eventName)}?access_token=${accessToken}`;
-
     const tempDiv = document.getElementById("temp");
-    const source = new EventSource(url);
+    let source;
 
-    source.onmessage = function(event) {
-      const data = JSON.parse(event.data);
-      tempDiv.textContent = data.data;
-    };
+    function connect() {
+      const url = `https://api.particle.io/v1/devices/${deviceID}/events/${encodeURIComponent(eventName)}?access_token=${accessToken}`;
+      
+      source = new EventSource(url);
 
-    source.onerror = function(err) {
-      tempDiv.textContent = "Error fetching temperature data.";
-      console.error("EventSource failed:", err);
-    };
-  </script>
-</body>
-</html>
+      source.onopen = () => {
+        console.log("SSE connection opened.");
+        tempDiv.textContent = "Connected. Waiting for data...";
+      };
+
+      source.onmessage = event => {
+        console.log("Received event:", event.data);
+        const data = JSON.parse(event.data);
+        tempDiv.textContent = data.data;
+      };
+
+      source.onerror = err =
