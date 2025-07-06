@@ -33,8 +33,7 @@
   <canvas id="tempChart" width="400" height="200"></canvas>
 
   <script>
-    // Replace this URL with your own published Google Sheet CSV link
-    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRTtfizZ2s_F-HS8GyzN_1gJmRWWiRZNwooBYbVUlIqH3nErMd0D-IAlOGgAfrQOd3SwwWKrqhx_Q9u/pub?output=csv";
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/1lgIDerjSPt4aueW9Vj5qHqmiolbNlvZJDfMJfSqdp94/pub?gid=0&single=true&output=csv";
 
     const tempDiv = document.getElementById("temp");
     const timestampDiv = document.getElementById("timestamp");
@@ -42,62 +41,69 @@
 
     let chart;
 
-    fetch(sheetUrl)
-      .then(response => response.text())
-      .then(csv => {
-        const lines = csv.trim().split("\n").slice(1); // Skip header
-        const labels = [];
-        const tempCData = [];
-        const tempFData = [];
+    function fetchDataAndUpdate() {
+      fetch(sheetUrl)
+        .then(response => response.text())
+        .then(csv => {
+          const lines = csv.trim().split("\n").slice(1); // Skip header
+          const labels = [];
+          const tempCData = [];
+          const tempFData = [];
 
-        lines.forEach(row => {
-          const [timestamp, tempC, tempF] = row.split(",");
-          labels.push(timestamp);
-          tempCData.push(parseFloat(tempC));
-          tempFData.push(parseFloat(tempF));
-        });
+          lines.forEach(row => {
+            const [timestamp, tempC, tempF] = row.split(",");
+            labels.push(timestamp);
+            tempCData.push(parseFloat(tempC));
+            tempFData.push(parseFloat(tempF));
+          });
 
-        const latestTempF = tempFData[tempFData.length - 1];
-        const latestTempC = tempCData[tempCData.length - 1];
-        const latestTimestamp = labels[labels.length - 1];
+          const latestTempF = tempFData[tempFData.length - 1];
+          const latestTempC = tempCData[tempCData.length - 1];
+          const latestTimestamp = labels[labels.length - 1];
 
-        tempDiv.textContent = `🌡️ ${latestTempF} °F / ${latestTempC} °C`;
-        timestampDiv.textContent = `⏱️ Last updated: ${latestTimestamp}`;
+          tempDiv.textContent = `🌡️ ${latestTempF} °F / ${latestTempC} °C`;
+          timestampDiv.textContent = `⏱️ Last updated: ${latestTimestamp}`;
 
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: labels,
-            datasets: [
-              {
-                label: "Temperature (°F)",
-                data: tempFData,
-                borderColor: "#f44336",
-                backgroundColor: "rgba(244, 67, 54, 0.2)",
-                fill: true,
+          if (!chart) {
+            chart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                labels: labels,
+                datasets: [{
+                  label: "Temperature (°F)",
+                  data: tempFData,
+                  borderColor: "#f44336",
+                  backgroundColor: "rgba(244, 67, 54, 0.2)",
+                  fill: true
+                }]
+              },
+              options: {
+                responsive: true,
+                animation: false,
+                plugins: {
+                  legend: { position: 'top' },
+                  title: { display: true, text: 'Omlet Coop Temperature Over Time' }
+                },
+                scales: {
+                  x: { title: { display: true, text: 'Time' } },
+                  y: { title: { display: true, text: '°F' } }
+                }
               }
-            ]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { position: 'top' },
-              title: {
-                display: true,
-                text: 'Omlet Coop Temperature Over Time'
-              }
-            },
-            scales: {
-              x: { title: { display: true, text: 'Time' } },
-              y: { title: { display: true, text: '°F' } }
-            }
+            });
+          } else {
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = tempFData;
+            chart.update();
           }
+        })
+        .catch(error => {
+          console.error("Error loading temperature data:", error);
+          tempDiv.textContent = "Error loading data.";
         });
-      })
-      .catch(error => {
-        console.error("Error loading temperature data:", error);
-        tempDiv.textContent = "Error loading data.";
-      });
+    }
+
+    fetchDataAndUpdate(); // Initial load
+    setInterval(fetchDataAndUpdate, 30000); // Refresh every 30 seconds
   </script>
 </body>
 </html>
