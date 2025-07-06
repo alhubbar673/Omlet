@@ -16,24 +16,38 @@
     const deviceID = "350040000d51353532343635";
     const accessToken = "222f6d52a942cb09d1627e985e23694d1521832e";
     const eventName = "Current Temperature";
-
     const tempDiv = document.getElementById("temp");
-    let source;
 
-    function connect() {
-      const url = `https://api.particle.io/v1/devices/${deviceID}/events/${encodeURIComponent(eventName)}?access_token=${accessToken}`;
-      
-      source = new EventSource(url);
+    async function fetchLastEvent() {
+      try {
+        const url = `https://api.particle.io/v1/devices/${deviceID}/events/${encodeURIComponent(eventName)}?access_token=${accessToken}`;
+        const response = await fetch(url);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result = "";
 
-      source.onopen = () => {
-        console.log("SSE connection opened.");
-        tempDiv.textContent = "Connected. Waiting for data...";
-      };
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          result += decoder.decode(value, { stream: true });
+          const lines = result.split("\n");
 
-      source.onmessage = event => {
-        console.log("Received event:", event.data);
-        const data = JSON.parse(event.data);
-        tempDiv.textContent = data.data;
-      };
+          for (let line of lines) {
+            if (line.startsWith("data:")) {
+              const json = JSON.parse(line.replace("data:", "").trim());
+              tempDiv.textContent = json.data;
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching event:", err);
+        tempDiv.textContent = "Error fetching temperature.";
+      }
+    }
 
-      source.onerror = err =
+    fetchLastEvent();
+    setInterval(fetchLastEvent, 30000); // every 30 seconds
+  </script>
+</body>
+</html>
