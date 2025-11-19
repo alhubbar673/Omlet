@@ -1,3 +1,4 @@
+
 /**************************************************************
 *   @brief: Omlet Chicken Coop Controller   
 *
@@ -24,6 +25,8 @@ void setup() {
   pinMode(lm35, INPUT);
   waitUntil(Particle.connected);
   Serial.println("Omlet Weather Station Starting...");
+
+  
 }
 
 void loop() {
@@ -55,4 +58,18 @@ float readTemperatureC(int sensePin) {
   float voltage = analogRead(sensePin) * (3.3 / 4095.0); // Photon uses 3.3V ADC ref
   float temperatureC = voltage * 100.0; // LM35: 10mV per °C
   return temperatureC;
+}
+
+int foodLevelSense(int foodSense ) {
+
+  int tube_a = D0;
+  int tube_b = D1;
+  int tube_c = D2;
+  int tube_d = D3;
+
+  pinMode(tube_a, tube_b, tube_c, tube_d, INPUT_PULLDOWN, INPUT_PULLDOWN, INPUT_PULLDOWN, INPUT_PULLDOWN);
+
+
+
+
 }
