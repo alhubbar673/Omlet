@@ -62,6 +62,7 @@ void loop() {
     if (Particle.connected()) {
       char payload[64];
       snprintf(payload, sizeof(payload), "{\"temp_c\": %.2f, \"temp_f\": %.2f}", outside_tempC, outside_tempF);
+      snprintf(payload, sizeof(payload), "{\"temp_c\": %.2f, \"temp_f\": %.2f}", out_tempC, outside_tempF);
       Particle.publish("Current Temperature", payload, PRIVATE);
     } else {
       Serial.println("Not connected to Particle Cloud.");
