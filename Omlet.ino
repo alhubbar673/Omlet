@@ -16,13 +16,19 @@
 SYSTEM_MODE(AUTOMATIC);
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 
-const int lm35 = A0;
+const int outside_temp = A0;
+const int inside_temp = A1;
+const int water_temp = A2;
 
 STARTUP(WiFi.selectAntenna(ANT_EXTERNAL));
 
 void setup() {
   Serial.begin(9600);
-  pinMode(lm35, INPUT);
+  pinMode(outside_temp, INPUT);
+  pinMode(inside_temp, INPUT);
+  pinMode(water_temp, INPUT);
+  
+
   waitUntil(Particle.connected);
   Serial.println("Omlet Weather Station Starting...");
 
@@ -37,14 +43,25 @@ void loop() {
   Particle.process(); // Maintain cloud connection
 
   if (now - lastPublish >= publishInterval) {
-    float tempC = readTemperatureC(lm35);
-    float tempF = (tempC * 1.8f) + 32.0f;
+    //outside coop temperature
+    float outside_tempC = readTemperatureC(outside_temp);
+    float outside_tempF = (outside_tempC * 1.8f) + 32.0f;
 
-    Serial.printf("Temp: %.2f °C | %.2f °F\n", tempC, tempF);
+    //inside coop temperature
+    float inside_tempC = readTemperatureC(inside_temp);
+    float inside_tempF = (inside_tempC * 1.8f) + 32.0f;
+
+    // water temperature
+
+
+
+
+    Serial.printf("Temp: %.2f °C | %.2f °F\n", outside_tempC, outside_tempF);
+    Serial.printf("Temp: %.2f °C | %.2f °F\n", inside_tempC, inside_tempF);
 
     if (Particle.connected()) {
       char payload[64];
-      snprintf(payload, sizeof(payload), "{\"temp_c\": %.2f, \"temp_f\": %.2f}", tempC, tempF);
+      snprintf(payload, sizeof(payload), "{\"temp_c\": %.2f, \"temp_f\": %.2f}", outside_tempC, outside_tempF);
       Particle.publish("Current Temperature", payload, PRIVATE);
     } else {
       Serial.println("Not connected to Particle Cloud.");
@@ -56,8 +73,12 @@ void loop() {
 
 float readTemperatureC(int sensePin) {
   float voltage = analogRead(sensePin) * (3.3 / 4095.0); // Photon uses 3.3V ADC ref
-  float temperatureC = voltage * 100.0; // LM35: 10mV per °C
+  float temperatureC = voltage * 100.0; // outside_temp: 10mV per °C
   return temperatureC;
+}
+
+float readWaterTemp(int waterSense) {
+
 }
 
 int foodLevelSense(int foodSense ) {
@@ -68,7 +89,9 @@ int foodLevelSense(int foodSense ) {
   int tube_d = D3;
 
   pinMode(tube_a, tube_b, tube_c, tube_d, INPUT_PULLDOWN, INPUT_PULLDOWN, INPUT_PULLDOWN, INPUT_PULLDOWN);
+}
 
+float waterTemp(float waterSense){
 
 
 
